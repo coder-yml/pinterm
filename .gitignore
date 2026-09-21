@@ -1,0 +1,12 @@
+.gradle/
+.gradle-user-home/
+.intellijPlatform/
+.kotlin/
+build/
+out/
+.idea/
+*.iml
+.idea_jars.list
+gradle.local.properties
+.DS_Store
+/META-INF/
