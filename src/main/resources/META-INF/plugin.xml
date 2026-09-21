@@ -3,22 +3,22 @@
     <name>PinTerm</name>
     <vendor url="https://github.com/coder-yml/pinterm" email="coder-yaml@qq.com">yaml</vendor>
     <description><![CDATA[
-        <p>Pin pinned terminals in the editor and run a one-line command.</p>
+        <p>把终端固定在编辑器区域，并在会话进入运行态后发送一行命令。</p>
         <ul>
-            <li>Toolbar icon opens configured tabs (Codex, Claude, Grok by default).</li>
-            <li>Sessions open in the editor area and are pinned automatically.</li>
-            <li>Optional single-line shell command after the session is running.</li>
-            <li>Requires IntelliJ IDEA 2026.2+ and the bundled Reworked Terminal.</li>
+            <li>工具栏图标打开已配置的标签（默认提供 Codex、Claude、Grok）。</li>
+            <li>终端会话在编辑器区域打开，并自动固定。</li>
+            <li>会话进入运行态后，可选地发送一行 shell 命令。</li>
+            <li>需要 IntelliJ IDEA 2026.2+ 及 IDE 自带的 Reworked Terminal。</li>
         </ul>
-        <p>PinTerm is not a sandbox. Commands run as the current user in the current project directory.</p>
+        <p>PinTerm 不是沙箱。命令会以当前用户身份、在当前项目目录下执行。</p>
     ]]></description>
     <!-- Change notes are generated from CHANGELOG.md at build time (see build.gradle.kts); the content below is only a fallback for tooling that reads this file directly. -->
     <change-notes><![CDATA[
         <p>0.1.0</p>
         <ul>
-            <li>Initial open-source release as PinTerm.</li>
-            <li>Toolbar icon-only dropdown for configured terminal tabs.</li>
-            <li>Open and pin Reworked Terminal sessions in the editor.</li>
+            <li>PinTerm 首次开源发布。</li>
+            <li>仅图标的主工具栏下拉入口，用于打开已配置的终端标签。</li>
+            <li>将 Reworked Terminal 会话打开到编辑器区域并固定。</li>
         </ul>
     ]]></change-notes>
 
