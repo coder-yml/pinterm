@@ -10,3 +10,7 @@ out/
 gradle.local.properties
 .DS_Store
 /META-INF/
+
+# 录屏原始素材：体积大，不入库。派生素材（抽帧/动图）见 docs/screenshots/
+docs/*.mov
+docs/*.mp4

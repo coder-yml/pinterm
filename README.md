@@ -6,6 +6,16 @@ PinTerm 是一个 IntelliJ Platform 插件：把预设终端打开到编辑器�
 
 PinTerm is not a sandbox. Installing it gives the plugin the same privileges as the IDE. Clicking a tab can run a configured command as the current user.
 
+![PinTerm 实际使用演示](docs/screenshots/demo-real.gif)
+
+> 以上是**真实操作录屏**（IDE 实机）：工具栏下拉选择标签 → 终端在编辑器区打开并固定（固定标签单独成行）→ 会话就绪后自动执行命令 → 回到 `Settings / Tools / PinTerm` 配置页。
+
+| 工具栏下拉选择标签 | 终端固定到编辑器并执行命令 | 配置界面 |
+| --- | --- | --- |
+| ![工具栏下拉](docs/screenshots/01-toolbar-dropdown.png) | ![终端固定](docs/screenshots/02-pinned-terminals.png) | ![配置界面](docs/screenshots/03-settings.png) |
+
+素材生成方式（从录屏抽帧）见 [docs/DEMO.md](docs/DEMO.md)。
+
 ## 功能
 
 - 主工具栏右侧提供仅图标的下拉入口。
@@ -20,7 +30,7 @@ PinTerm is not a sandbox. Installing it gives the plugin the same privileges as 
 
 - IntelliJ IDEA 2026.2 或更新（build `262+`）
 - Reworked Terminal（IDE 自带 Terminal 插件）
-- 构建需要本机已安装对应版本的 IntelliJ IDEA
+- 构建默认使用本机安装的 IntelliJ IDEA；没有时退化为下载式平台，见[从源码构建](#从源码构建)
 - 编译插件源码需要 JDK 25（本机 IDEA 2026.2 的平台字节码是 Java 25）
 - 运行 Gradle 8.13 守护进程请用 JDK 21（Kotlin DSL 解析不了 Java 25.0.3 这类版本号）
 
@@ -68,7 +78,7 @@ PinTerm is not a sandbox. Installing it gives the plugin the same privileges as 
 localIdePath=/Applications/IntelliJ IDEA.app
 ```
 
-未指定时，默认使用 `/Applications/IntelliJ IDEA.app`。非 macOS 必须显式覆盖。
+未指定时，默认使用 `/Applications/IntelliJ IDEA.app`；该路径不存在时（例如 CI / 非 macOS）会退化为下载式平台，版本用 `-PplatformVersion=` 覆盖（默认 `2026.2.3`）。
 
 Gradle 守护进程示例：
 
@@ -80,15 +90,68 @@ JAVA_HOME="$(/usr/libexec/java_home -v 21)" ./gradlew test
 
 插件包：`build/distributions/pinterm-0.1.0.zip`
 
+## 发布
+
+发布说明（changelog）以仓库根目录的 `CHANGELOG.md` 为**唯一来源**，遵循 Keep a Changelog：每个版本一个 `## [<version>]` 段。同一段内容会：
+
+- 作为 Git tag 的 GitHub Release 正文（`.github/workflows/release.yml` 用 `--notes-file` 传入）；
+- 在构建期转成 HTML 写入产物 `plugin.xml` 的 `<change-notes>`（`build.gradle.kts` 里的 `patchPluginXml.changeNotes`），即 Marketplace 展示给用户的更新说明。
+
+**所以发版前必须先为新的 `pluginVersion` 在 `CHANGELOG.md` 顶部补一段**，否则产物不带 change-notes，Release 会退化成 GitHub 自动生成的 notes。
+
+发布步骤：
+
+1. 更新 `gradle.properties` 的 `pluginVersion`，并在 `CHANGELOG.md` 顶部补上对应 `## [x.y.z]` 段。
+2. 在 GitHub 仓库配置 secrets：
+
+   | secret | 必需 | 说明 |
+   | --- | --- | --- |
+   | `PUBLISH_TOKEN` | 是 | JetBrains Marketplace 永久 token（[作者页](https://plugins.jetbrains.com/author/me/tokens)）。首次发布需先在 Marketplace 手动上传一次以登记插件。 |
+   | `CERTIFICATE_CHAIN` | 否 | 插件签名证书链。 |
+   | `PRIVATE_KEY` | 否 | 签名私钥。 |
+   | `PRIVATE_KEY_PASSWORD` | 否 | 私钥口令。 |
+
+   签名变量缺失时 `signPlugin` 会跳过，发布**未签名**插件。
+
+3. 打 tag 并推送：
+
+   ```bash
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
+
+`.github/workflows/release.yml` 随后自动执行 `test` → `buildPlugin` → `publishPlugin` → 创建 GitHub Release（标题为 tag 名，正文取 `CHANGELOG.md` 当前版本段，并附带 `build/distributions/pinterm-<version>.zip`）。tag 名 `v0.1.0` 会作为 `pluginVersion` 传入（剥掉 `v` 前缀）；手动触发（`workflow_dispatch`）则取 `gradle.properties`，且不创建 Release。
+
+推送 `main` / 提交 PR 时，`.github/workflows/ci.yml` 会跑 `test` + `buildPlugin` 并上传 zip。
+
+Marketplace 侧的「自动更新」由平台提供：只要发布了 `version` 更高的包，IDE 客户端就会提示更新，无需插件端额外逻辑。
+
+**Media（截图）需手工上传。** 插件页的截图区不随插件包发布，`publishPlugin` 不会上传，也不被 Gradle 版本管理。素材在 `docs/screenshots/`：真实截图与演示 GIF 都是 `1200×760`（Marketplace 要求的尺寸与比例），README 与插件页**共用同一份**，不会出现两处漂移。上传步骤见 [docs/DEMO.md](docs/DEMO.md)「八、Marketplace Media 素材」。
+
 ## 已知限制
 
 - 依赖 Reworked Terminal 内部 API，`sinceBuild` 为 `262`；升级 IDE 后这些 API 可能再变。
-- 构建绑本机 IDEA，没有通用 CI 配置。
+- 本地没有 IDEA 时改用下载式平台，因此可在 CI（GitHub Actions）构建；自动发布到 Marketplace 需自行配置 secrets，见[发布](#发布)。
+- 发布说明需人工维护：发版前要为新的 `pluginVersion` 在 `CHANGELOG.md` 顶部补一段，见[发布](#发布)。
 - 没有「真实打开 IDE 终端并固定」的集成测试。
 - 不支持按 tab 配置工作目录或环境变量。
 - `OWNED` 标记存在 VirtualFile UserData 上，IDE 重启后通常丢失。
 - Marketplace / 设置页图标是 `META-INF/pluginIcon.svg`；工具栏图标是 `/icons/pinterm.svg`。
 - 安装、更新、卸载声明为不需要重启（`require-restart="false"`）。从磁盘安装 zip 时，平台有时仍会提示重启。
+
+## 验证（Plugin Verifier）
+
+JetBrains Plugin Verifier 对 0.1.0 的结论：
+
+- IntelliJ IDEA 2026.2.3：Compatible（5 处 deprecated、42 处 experimental、15 处 internal API）
+- IntelliJ IDEA 2026.3 eap (263.5153.40)：Compatible（同上）
+- IDE 实机运行：`No issues occurred during the IDE run with the plugin installed`
+
+这些计数是提示，不是不兼容，目前都是有意保留的：
+
+- deprecated（5）：全部是 `Disposer.isDisposed(Disposable)`。2026.2 编译期 API 提供的 `Disposable` 只有 `dispose()`，没有 `isDisposed()`，没有等价替代，所以保留；5 处都在 `PinTermService` 的终端文件与命令会话清理路径上。
+- experimental（42）：全部来自 Reworked Terminal 的编辑器/标签/会话接口（`TerminalToolWindowTabsManager`、`TerminalToolWindowTab`、`TerminalToolWindowTabBuilder`、`TerminalView`、`TerminalViewSessionState`、`TerminalSendTextBuilder`）。把终端开进编辑器并固定就是这些接口提供的，绕不开。
+- internal（15）：Reworked Terminal 的持久化接口（`TerminalTabsStorage`、`TerminalSessionPersistedTab`）、`StartupManager.runAfterOpened`、`AppLifecycleListener.appStarted`、以及 `UISettings.getState()` / `UISettingsState` 的固定标签设置。它们没有公开替代（`postStartupActivity` 只接受 Kotlin suspend 的 `ProjectActivity`；平台自己的 `CreateAllServicesAndExtensionsActivity` 也用 `appStarted`），改动只会把风险转移到运行时行为上。
 
 ## License
 
