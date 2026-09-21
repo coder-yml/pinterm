@@ -24,7 +24,6 @@ import com.intellij.terminal.frontend.toolwindow.TerminalToolWindowTab;
 import com.intellij.terminal.frontend.toolwindow.TerminalToolWindowTabsManager;
 import com.intellij.terminal.frontend.view.TerminalView;
 import com.intellij.terminal.frontend.view.TerminalViewSessionState;
-import org.jetbrains.plugins.terminal.settings.impl.TerminalSessionPersistedTab;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -443,14 +442,7 @@ public final class PinTermService implements Disposable {
 
     private void clearPersistedPluginTerminalTabs(@NotNull Set<String> configuredTabNames) {
         try {
-            List<TerminalSessionPersistedTab> storedTabs = PinTermPlatformTerminals.storedTabs(project);
-            List<TerminalSessionPersistedTab> remainingTabs = PinTermPlatformTerminals.withoutPluginTabs(
-                storedTabs,
-                configuredTabNames
-            );
-            if (remainingTabs.size() != storedTabs.size()) {
-                PinTermPlatformTerminals.updateStoredTabs(project, remainingTabs);
-            }
+            PinTermPlatformTerminals.removeStoredPluginTabs(project, configuredTabNames);
         }
         catch (Throwable error) {
             LOG.warn("Failed to clear persisted PinTerm tabs", error);

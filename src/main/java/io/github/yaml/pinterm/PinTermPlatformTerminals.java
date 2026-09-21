@@ -61,15 +61,16 @@ final class PinTermPlatformTerminals {
             .send(command);
     }
 
-    static @NotNull List<TerminalSessionPersistedTab> storedTabs(@NotNull Project project) {
-        return new ArrayList<>(TerminalTabsStorage.getInstance(project).getStoredTabs());
-    }
-
-    static void updateStoredTabs(
+    static void removeStoredPluginTabs(
         @NotNull Project project,
-        @NotNull List<TerminalSessionPersistedTab> remainingTabs
+        @NotNull Set<String> configuredTabNames
     ) {
-        TerminalTabsStorage.getInstance(project).updateStoredTabs(remainingTabs);
+        TerminalTabsStorage storage = TerminalTabsStorage.getInstance(project);
+        List<TerminalSessionPersistedTab> storedTabs = new ArrayList<>(storage.getStoredTabs());
+        List<TerminalSessionPersistedTab> remainingTabs = withoutPluginTabs(storedTabs, configuredTabNames);
+        if (remainingTabs.size() != storedTabs.size()) {
+            storage.updateStoredTabs(remainingTabs);
+        }
     }
 
     static @NotNull List<TerminalSessionPersistedTab> withoutPluginTabs(
