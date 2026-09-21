@@ -19,7 +19,7 @@ public class PinTermDescriptorCompatibilityTest {
         assertTrue(pluginXml.contains("<depends>org.jetbrains.plugins.terminal</depends>"));
         assertFalse(pluginXml.contains("preload="));
         assertTrue(pluginXml.contains("topic=\"com.intellij.ide.plugins.DynamicPluginListener\""));
-        assertTrue(pluginXml.contains("url=\"https://github.com/yaml\""));
+        assertTrue(pluginXml.contains("url=\"https://github.com/coder-yml/pinterm\""));
         assertTrue(pluginXml.contains("email=\"coder-yaml@qq.com\""));
         assertTrue(pluginXml.contains("icon=\"/icons/pinterm.svg\""));
         assertTrue(Files.isRegularFile(Path.of("src/main/resources/META-INF/pluginIcon.svg")));
