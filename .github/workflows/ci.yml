@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Expose the JDK 25 toolchain (installed below) to Gradle. setup-java exports
+      # JAVA_HOME_<major>_<arch>; list both arches so the workflow is runner-agnostic.
+      GRADLE_OPTS: "-Dorg.gradle.java.installations.fromEnv=JAVA_HOME_25_X64,JAVA_HOME_25_ARM64"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25 (compile toolchain)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up JDK 21 (Gradle daemon)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Use JDK 21 for the Gradle daemon
+        shell: bash
+        run: echo "JAVA_HOME=${JAVA_HOME_21_X64:-$JAVA_HOME_21_ARM64}" >> "$GITHUB_ENV"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Test
+        run: ./gradlew test --console=plain
+
+      - name: Build plugin
+        run: ./gradlew buildPlugin --console=plain
+
+      - name: Upload plugin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-zip
+          path: build/distributions/*.zip
+          if-no-files-found: error

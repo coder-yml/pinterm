@@ -12,6 +12,7 @@
         </ul>
         <p>PinTerm is not a sandbox. Commands run as the current user in the current project directory.</p>
     ]]></description>
+    <!-- Change notes are generated from CHANGELOG.md at build time (see build.gradle.kts); the content below is only a fallback for tooling that reads this file directly. -->
     <change-notes><![CDATA[
         <p>0.1.0</p>
         <ul>

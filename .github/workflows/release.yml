@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      # Required for `gh release create` / `gh release upload` with the default token.
+      contents: write
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.java.installations.fromEnv=JAVA_HOME_25_X64,JAVA_HOME_25_ARM64"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25 (compile toolchain)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up JDK 21 (Gradle daemon)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Use JDK 21 for the Gradle daemon
+        shell: bash
+        run: echo "JAVA_HOME=${JAVA_HOME_21_X64:-$JAVA_HOME_21_ARM64}" >> "$GITHUB_ENV"
+
+      - name: Resolve version
+        shell: bash
+        run: |
+          # On a tag push keep the version in sync with the tag (v0.1.0 -> 0.1.0);
+          # on manual runs fall back to gradle.properties.
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="$(awk -F= '/^pluginVersion/{gsub(/[[:space:]]/,"",$2); print $2}' gradle.properties)"
+          fi
+          echo "PINTERM_VERSION=${version}" >> "$GITHUB_ENV"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Test
+        run: ./gradlew test --console=plain
+
+      - name: Build distribution
+        run: ./gradlew buildPlugin -PpluginVersion="${PINTERM_VERSION}" --console=plain
+
+      - name: Publish to JetBrains Marketplace
+        env:
+          # Repository secret: permanent token from https://plugins.jetbrains.com/author/me/tokens
+          PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
+          # Optional signing secrets. When unset, the plugin is published unsigned.
+          CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
+        run: ./gradlew publishPlugin -PpluginVersion="${PINTERM_VERSION}" --console=plain
+
+      - name: Create GitHub Release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          # Use the "## [<version>]" section of CHANGELOG.md as the release body.
+          awk -v header="## [${PINTERM_VERSION}]" '
+            index($0, header) == 1 { found = 1; next }
+            found && substr($0, 1, 4) == "## [" { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+
+          if [ -s release-notes.md ]; then
+            notes=(--notes-file release-notes.md)
+          else
+            echo "No CHANGELOG.md section for ${PINTERM_VERSION}; using generated notes."
+            notes=(--generate-notes)
+          fi
+
+          zip="build/distributions/pinterm-${PINTERM_VERSION}.zip"
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            # Re-run on an existing tag: refresh notes and the attached artifact.
+            gh release edit "${GITHUB_REF_NAME}" "${notes[@]}"
+            gh release upload "${GITHUB_REF_NAME}" "${zip}" --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" \
+              --title "${GITHUB_REF_NAME}" \
+              "${notes[@]}" \
+              "${zip}"
+          fi
