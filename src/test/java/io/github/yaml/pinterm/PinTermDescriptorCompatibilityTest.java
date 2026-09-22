@@ -20,6 +20,8 @@ public class PinTermDescriptorCompatibilityTest {
         assertFalse(pluginXml.contains("preload="));
         assertTrue(pluginXml.contains("topic=\"com.intellij.ide.plugins.DynamicPluginListener\""));
         assertTrue(pluginXml.contains("url=\"https://github.com/coder-yml/pinterm\""));
+        assertTrue(visibleDescription(pluginXml).startsWith("Pin pinned terminals"));
+        assertTrue(visibleDescription(pluginXml).length() >= 40);
         assertTrue(pluginXml.contains("email=\"coder-yaml@qq.com\""));
         assertTrue(pluginXml.contains("icon=\"/icons/pinterm.svg\""));
         assertTrue(Files.isRegularFile(Path.of("src/main/resources/META-INF/pluginIcon.svg")));
@@ -27,5 +29,17 @@ public class PinTermDescriptorCompatibilityTest {
         assertTrue(gradleProperties.contains("sinceBuild = 262"));
         assertFalse(pluginXml.contains("until-build"));
         assertFalse(gradleProperties.contains("untilBuild"));
+    }
+
+    /** Marketplace rejects a description whose visible text does not start with Latin characters. */
+    private static String visibleDescription(String pluginXml) {
+        int start = pluginXml.indexOf("<description>");
+        int end = pluginXml.indexOf("</description>");
+        String body = pluginXml.substring(start, end);
+        int cdata = body.indexOf("<![CDATA[");
+        if (cdata >= 0) {
+            body = body.substring(cdata + "<![CDATA[".length());
+        }
+        return body.replaceAll("<[^>]+>", " ").replaceAll("\\s+", " ").trim();
     }
 }

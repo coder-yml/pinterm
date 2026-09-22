@@ -3,6 +3,7 @@
     <name>PinTerm</name>
     <vendor url="https://github.com/coder-yml/pinterm" email="coder-yaml@qq.com">yaml</vendor>
     <description><![CDATA[
+        <p>Pin pinned terminals in the editor and send a one-line command once the session is running.</p>
         <p>把终端固定在编辑器区域，并在会话进入运行态后发送一行命令。</p>
         <ul>
             <li>工具栏图标打开已配置的标签（默认提供 Codex、Claude、Grok）。</li>

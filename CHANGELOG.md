@@ -7,6 +7,13 @@ PinTerm 的所有重要变更都记录在本文件。
 
 本文件是发布说明的唯一来源：与构建的 `pluginVersion` 匹配的 `## [<version>]` 段，会同时用作 Git tag 的 Release notes **以及**在构建期转成插件的 `<change-notes>`。因此请保持条目简洁、面向用户。
 
+## [0.1.2] - 2026-09-22
+
+### 变更
+
+- 插件描述改为中文，并在开头保留一段英文，以满足 Marketplace 对描述必须以拉丁字符开头的要求。
+- 作者链接指向本仓库（https://github.com/coder-yml/pinterm）。
+
 ## [0.1.1] - 2026-09-22
 
 ### 变更
