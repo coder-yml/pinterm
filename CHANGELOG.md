@@ -7,6 +7,14 @@ PinTerm 的所有重要变更都记录在本文件。
 
 本文件是发布说明的唯一来源：与构建的 `pluginVersion` 匹配的 `## [<version>]` 段，会同时用作 Git tag 的 Release notes **以及**在构建期转成插件的 `<change-notes>`。因此请保持条目简洁、面向用户。
 
+## [0.1.4] - 2026-09-24
+
+### 变更
+
+- 去掉对 IDE Internal API 的调用，以通过 JetBrains Marketplace 的 Plugin Verifier。
+- 首次安装不再自动打开「Show pinned tabs in a separate row」。需要固定标签单独成行时，到 `Settings / Editor / General / Editor Tabs` 自行打开。
+- 关闭项目或卸载插件时，只关闭 PinTerm 在编辑器里打开的终端，不再按名称改写 Terminal 工具窗口保存的会话。
+
 ## [0.1.3] - 2026-09-22
 
 ### 变更

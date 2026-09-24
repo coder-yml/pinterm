@@ -27,7 +27,6 @@
     <depends>org.jetbrains.plugins.terminal</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <applicationService serviceImplementation="io.github.yaml.pinterm.PinTermIdeDefaultsService"/>
         <applicationService serviceImplementation="io.github.yaml.pinterm.PinTermSettings"/>
         <applicationConfigurable
                 groupId="tools"
@@ -36,15 +35,13 @@
                 instance="io.github.yaml.pinterm.PinTermConfigurable"/>
         <notificationGroup id="PinTerm" displayType="BALLOON" isLogByDefault="true"/>
         <projectService serviceImplementation="io.github.yaml.pinterm.PinTermService"/>
+        <postStartupActivity implementation="io.github.yaml.pinterm.PinTermStartupActivity"/>
     </extensions>
 
     <applicationListeners>
         <listener
                 class="io.github.yaml.pinterm.PinTermDynamicPluginSupport"
                 topic="com.intellij.ide.plugins.DynamicPluginListener"/>
-        <listener
-                class="io.github.yaml.pinterm.PinTermDynamicPluginSupport"
-                topic="com.intellij.ide.AppLifecycleListener"/>
     </applicationListeners>
 
     <actions>

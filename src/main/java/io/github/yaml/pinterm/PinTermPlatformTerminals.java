@@ -6,13 +6,6 @@ import com.intellij.terminal.frontend.toolwindow.TerminalToolWindowTab;
 import com.intellij.terminal.frontend.toolwindow.TerminalToolWindowTabsManager;
 import com.intellij.terminal.frontend.view.TerminalView;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.plugins.terminal.settings.impl.TerminalSessionPersistedTab;
-import org.jetbrains.plugins.terminal.settings.impl.TerminalTabsStorage;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 
 final class PinTermPlatformTerminals {
     private PinTermPlatformTerminals() {
@@ -29,7 +22,6 @@ final class PinTermPlatformTerminals {
             .tabName(tabName)
             .requestFocus(false)
             .deferSessionStartUntilUiShown(false)
-            .shouldAddToToolWindow(true)
             .createTab();
     }
 
@@ -59,39 +51,5 @@ final class PinTermPlatformTerminals {
         terminalView.createSendTextBuilder()
             .shouldExecute()
             .send(command);
-    }
-
-    static void removeStoredPluginTabs(
-        @NotNull Project project,
-        @NotNull Set<String> configuredTabNames
-    ) {
-        TerminalTabsStorage storage = TerminalTabsStorage.getInstance(project);
-        List<TerminalSessionPersistedTab> storedTabs = new ArrayList<>(storage.getStoredTabs());
-        List<TerminalSessionPersistedTab> remainingTabs = withoutPluginTabs(storedTabs, configuredTabNames);
-        if (remainingTabs.size() != storedTabs.size()) {
-            storage.updateStoredTabs(remainingTabs);
-        }
-    }
-
-    static @NotNull List<TerminalSessionPersistedTab> withoutPluginTabs(
-        @NotNull List<TerminalSessionPersistedTab> storedTabs,
-        @NotNull Set<String> configuredTabNames
-    ) {
-        List<TerminalSessionPersistedTab> remainingTabs = new ArrayList<>();
-        for (TerminalSessionPersistedTab storedTab : storedTabs) {
-            if (shouldDropPersistedTab(storedTab == null ? null : storedTab.getName(), configuredTabNames)) {
-                continue;
-            }
-            remainingTabs.add(storedTab);
-        }
-        return remainingTabs;
-    }
-
-    static boolean shouldDropPersistedTab(
-        @Nullable String storedTabName,
-        @NotNull Set<String> configuredTabNames
-    ) {
-        return storedTabName != null
-            && PinTermTabNames.isPinTermTabName(storedTabName, configuredTabNames);
     }
 }

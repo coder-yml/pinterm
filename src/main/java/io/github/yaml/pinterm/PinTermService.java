@@ -16,7 +16,6 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.project.ProjectManagerListener;
 import com.intellij.openapi.project.ProjectUtil;
-import com.intellij.openapi.startup.StartupManager;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.terminal.frontend.editor.TerminalViewVirtualFile;
@@ -81,10 +80,6 @@ public final class PinTermService implements Disposable {
                     }
                 }
             }
-        );
-
-        StartupManager.getInstance(project).runAfterOpened(() ->
-            ApplicationManager.getApplication().invokeLater(this::scheduleStartupCleanup)
         );
     }
 
@@ -208,9 +203,7 @@ public final class PinTermService implements Disposable {
             }
 
             FileEditorManagerEx editorManager = FileEditorManagerEx.getInstanceEx(project);
-            Set<String> configuredTabNames = getConfiguredTabNames();
             closeEditorTerminalFiles(editorManager, true);
-            clearPersistedPluginTerminalTabs(configuredTabNames);
         };
 
         if (ApplicationManager.getApplication().isDispatchThread()) {
@@ -321,17 +314,15 @@ public final class PinTermService implements Disposable {
         }
 
         try {
-            Set<String> configuredTabNames = getConfiguredTabNames();
             FileEditorManagerEx editorManager = FileEditorManagerEx.getInstanceEx(project);
             closeEditorTerminalFiles(editorManager, false);
-            clearPersistedPluginTerminalTabs(configuredTabNames);
         }
         catch (Throwable error) {
             LOG.warn("Failed to cleanup restored PinTerm tabs after project open", error);
         }
     }
 
-    private void scheduleStartupCleanup() {
+    void scheduleStartupCleanup() {
         if (project.isDisposed()) {
             return;
         }
@@ -438,19 +429,6 @@ public final class PinTermService implements Disposable {
         finally {
             releaseTrackedFile(file);
         }
-    }
-
-    private void clearPersistedPluginTerminalTabs(@NotNull Set<String> configuredTabNames) {
-        try {
-            PinTermPlatformTerminals.removeStoredPluginTabs(project, configuredTabNames);
-        }
-        catch (Throwable error) {
-            LOG.warn("Failed to clear persisted PinTerm tabs", error);
-        }
-    }
-
-    private @NotNull Set<String> getConfiguredTabNames() {
-        return PinTermTabNames.fromTabs(PinTermSettings.getInstance().getTabs());
     }
 
     private final class CommandExecutionSession {

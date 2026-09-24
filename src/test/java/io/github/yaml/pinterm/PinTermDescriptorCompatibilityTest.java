@@ -19,6 +19,11 @@ public class PinTermDescriptorCompatibilityTest {
         assertTrue(pluginXml.contains("<depends>org.jetbrains.plugins.terminal</depends>"));
         assertFalse(pluginXml.contains("preload="));
         assertTrue(pluginXml.contains("topic=\"com.intellij.ide.plugins.DynamicPluginListener\""));
+        assertTrue(pluginXml.contains(
+            "<postStartupActivity implementation=\"io.github.yaml.pinterm.PinTermStartupActivity\"/>"
+        ));
+        assertFalse(pluginXml.contains("AppLifecycleListener"));
+        assertFalse(pluginXml.contains("PinTermIdeDefaultsService"));
         assertTrue(pluginXml.contains("url=\"https://github.com/coder-yml/pinterm\""));
         assertTrue(visibleDescription(pluginXml).startsWith("Pin pinned terminals"));
         assertTrue(visibleDescription(pluginXml).length() >= 40);

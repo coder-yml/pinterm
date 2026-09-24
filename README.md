@@ -2,7 +2,7 @@
 
 PinTerm is an IntelliJ Platform plugin that opens configured terminal tabs in the editor, pins them, and can send a one-line shell command once the session is running.
 
-PinTerm 是一个 IntelliJ Platform 插件：把预设终端打开到编辑器区域、自动固定标签，并在会话就绪后按需发送一行 shell 命令。首次安装时会打开 IDE 全局的「固定标签单独一行」，让钉住的终端和普通编辑器标签分开。
+PinTerm 是一个 IntelliJ Platform 插件：把预设终端打开到编辑器区域、自动固定标签，并在会话就绪后按需发送一行 shell 命令。
 
 PinTerm is not a sandbox. Installing it gives the plugin the same privileges as the IDE. Clicking a tab can run a configured command as the current user.
 
@@ -22,7 +22,6 @@ PinTerm is not a sandbox. Installing it gives the plugin the same privileges as 
 - 在 `Settings / Tools / PinTerm` 中维护多个终端标签（名称 + 单行命令）。
 - 将选中的终端打开到编辑器区域，而不是留在 Terminal 工具窗口。
 - 自动固定打开的终端标签。
-- 首次安装时启用 **Show pinned tabs in a separate row**（只改一次，之后尊重用户自己的选择）。
 - 终端进入运行态后，可发送配置的单行命令。不可信项目不会发送命令。
 - 项目关闭或插件卸载前，清理由 PinTerm 打开的终端。
 
@@ -41,9 +40,9 @@ PinTerm is not a sandbox. Installing it gives the plugin the same privileges as 
    - **Tab Name**：显示名，保存时不能为空、不能重复。
    - **Shell Command**：可选，必须是单行。
 3. 从工具栏下拉选择一个 tab，终端会打开在编辑器中并固定。
-4. 如需固定标签单独成行：`Settings / Editor / General / Editor Tabs` → **Show pinned tabs in a separate row**（插件首次启动会帮你打开）。
+4. 如需固定标签单独成行：`Settings / Editor / General / Editor Tabs` → **Show pinned tabs in a separate row**。插件不会改这个 IDE 全局开关。
 
-不要把 PinTerm tab 起成和普通 Terminal 会话相同的名字。项目关闭时，插件会按**当前配置里的 tab 显示名**清理 Terminal 的持久化记录。编辑器里的标签只关带 PinTerm 标记的文件；该标记过不了 IDE 重启，所以崩溃后留在编辑器里的终端不会再被启动清理关掉。
+编辑器里的标签只关带 PinTerm 标记的文件；该标记过不了 IDE 重启。插件也不再改写 Terminal 工具窗口保存的会话。若重启后工具窗口里出现以前固定过的同名标签，在 Terminal 工具窗口里关掉即可。
 
 ## 风险与信任模型
 
@@ -52,9 +51,8 @@ PinTerm is not a sandbox. Installing it gives the plugin the same privileges as 
 3. **命令不漫游**：`pinterm.xml` 关闭了 Settings Sync 漫游，避免把可执行命令同步到其它机器。
 4. **cwd = 当前项目** 的 `basePath`（或 `guessProjectDir`），不是 tab 级配置。换项目会用同一条命令、不同工作目录。
 5. **不可信项目**：终端仍会打开，但不会发送配置的命令。
-6. **持久化清理按 tab 显示名**：只匹配**当前配置里出现过的名字**。不要和普通 Terminal 同名，否则关项目 / 卸插件可能丢掉用户自己的会话记录。
-7. **首次安装改的是 IDE 全局**「固定标签单独一行」，不是 PinTerm 自己的 tab。只改一次；改回路径：`Settings / Editor / General / Editor Tabs`。
-8. 构建默认本机 `/Applications/IntelliJ IDEA.app`，用环境变量 / `-P` / `gradle.local.properties` 覆盖，路径不要入库。
+6. **不改写 Terminal 的持久化会话**。关项目或卸插件只关闭编辑器里由 PinTerm 打开的终端。标签名可以和普通 Terminal 会话相同。
+7. 构建默认本机 `/Applications/IntelliJ IDEA.app`，用环境变量 / `-P` / `gradle.local.properties` 覆盖，路径不要入库。
 
 ## 配置模型
 
@@ -130,7 +128,7 @@ Marketplace 侧的「自动更新」由平台提供：只要发布了 `version` 
 
 ## 已知限制
 
-- 依赖 Reworked Terminal 内部 API，`sinceBuild` 为 `262`；升级 IDE 后这些 API 可能再变。
+- 依赖 Reworked Terminal 的实验性 API，`sinceBuild` 为 `262`；升级 IDE 后这些 API 可能再变。不使用 `@ApiStatus.Internal`。
 - 本地没有 IDEA 时改用下载式平台，因此可在 CI（GitHub Actions）构建；自动发布到 Marketplace 需自行配置 secrets，见[发布](#发布)。
 - 发布说明需人工维护：发版前要为新的 `pluginVersion` 在 `CHANGELOG.md` 顶部补一段，见[发布](#发布)。
 - 没有「真实打开 IDE 终端并固定」的集成测试。
@@ -141,17 +139,18 @@ Marketplace 侧的「自动更新」由平台提供：只要发布了 `version` 
 
 ## 验证（Plugin Verifier）
 
-JetBrains Plugin Verifier 对 0.1.0 的结论：
+Marketplace 拒绝带 `@ApiStatus.Internal` 的更新。0.1.4 去掉了这些调用：
 
-- IntelliJ IDEA 2026.2.3：Compatible（5 处 deprecated、42 处 experimental、15 处 internal API）
-- IntelliJ IDEA 2026.3 eap (263.5153.40)：Compatible（同上）
-- IDE 实机运行：`No issues occurred during the IDE run with the plugin installed`
+- `StartupManager.runAfterOpened` 改为 `postStartupActivity` / `ProjectActivity`（`PinTermStartupActivity`）。
+- 不再读取 `UISettings.getState()` / `UISettingsState`，因此不再自动打开「固定标签单独一行」。
+- 不再调用 `TerminalTabsStorage`、`TerminalSessionPersistedTab`，也不再调用 `shouldAddToToolWindow`（262 上该方法是 Internal；默认仍会先把标签放进工具窗口，随后 `detachTab` 拆走）。
 
-这些计数是提示，不是不兼容，目前都是有意保留的：
+Plugin Verifier 1.410 对 `build/distributions/pinterm-0.1.4.zip`、本机 IntelliJ IDEA 2026.2.3（IU-262.10968.63）的结论：Compatible。5 处 deprecated，41 处 experimental，0 处 internal。
 
-- deprecated（5）：全部是 `Disposer.isDisposed(Disposable)`。2026.2 编译期 API 提供的 `Disposable` 只有 `dispose()`，没有 `isDisposed()`，没有等价替代，所以保留；5 处都在 `PinTermService` 的终端文件与命令会话清理路径上。
-- experimental（42）：全部来自 Reworked Terminal 的编辑器/标签/会话接口（`TerminalToolWindowTabsManager`、`TerminalToolWindowTab`、`TerminalToolWindowTabBuilder`、`TerminalView`、`TerminalViewSessionState`、`TerminalSendTextBuilder`）。把终端开进编辑器并固定就是这些接口提供的，绕不开。
-- internal（15）：Reworked Terminal 的持久化接口（`TerminalTabsStorage`、`TerminalSessionPersistedTab`）、`StartupManager.runAfterOpened`、`AppLifecycleListener.appStarted`、以及 `UISettings.getState()` / `UISettingsState` 的固定标签设置。它们没有公开替代（`postStartupActivity` 只接受 Kotlin suspend 的 `ProjectActivity`；平台自己的 `CreateAllServicesAndExtensionsActivity` 也用 `appStarted`），改动只会把风险转移到运行时行为上。
+仍会保留的提示：
+
+- deprecated（5）：全部是 `Disposer.isDisposed(Disposable)`。2026.2 的 `Disposable` 只有 `dispose()`，没有 `isDisposed()`，清理路径上没有等价替代。
+- experimental（41）：Reworked Terminal 的编辑器/标签/会话接口（`TerminalToolWindowTabsManager`、`TerminalToolWindowTab`、`TerminalToolWindowTabBuilder`、`TerminalView`、`TerminalViewSessionState`、`TerminalSendTextBuilder`）。把终端开进编辑器并固定就是这些接口提供的。
 
 ## License
 

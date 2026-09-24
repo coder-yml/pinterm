@@ -4,13 +4,17 @@ import com.intellij.terminal.frontend.editor.TerminalViewVirtualFile;
 import com.intellij.terminal.frontend.toolwindow.TerminalToolWindowTab;
 import com.intellij.terminal.frontend.toolwindow.TerminalToolWindowTabsManager;
 import com.intellij.terminal.frontend.view.TerminalView;
-import org.jetbrains.plugins.terminal.settings.impl.TerminalTabsStorage;
 import org.junit.Test;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 public class PinTermApiCompatibilityTest {
@@ -63,10 +67,29 @@ public class PinTermApiCompatibilityTest {
     }
 
     @Test
-    public void persistedTabsLiveOnTheReworkedSettingsStorage() {
-        assertEquals(
-            "org.jetbrains.plugins.terminal.settings.impl.TerminalTabsStorage",
-            TerminalTabsStorage.class.getName()
+    public void mainSourcesDoNotReferenceMarketplaceInternalApis() throws Exception {
+        List<String> forbidden = List.of(
+            "TerminalTabsStorage",
+            "TerminalSessionPersistedTab",
+            "runAfterOpened",
+            "appStarted",
+            "UISettings",
+            "shouldAddToToolWindow",
+            "PinTermIdeDefaultsService"
         );
+        try (Stream<Path> files = Files.walk(Path.of("src/main/java"))) {
+            files.filter(path -> path.toString().endsWith(".java")).forEach(path -> {
+                String source;
+                try {
+                    source = Files.readString(path);
+                }
+                catch (Exception error) {
+                    throw new RuntimeException(error);
+                }
+                for (String token : forbidden) {
+                    assertFalse(path + " references " + token, source.contains(token));
+                }
+            });
+        }
     }
 }
